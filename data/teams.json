@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Curt's Dirt McGurts",
+    "owner": "Curt",
+    "record": "0-0",
+    "pointsFor": 0,
+    "logo": "/logos/mcgurts.png"
+  },
+  {
+    "name": "Fruit City Grit",
+    "owner": "Brett",
+    "record": "0-0",
+    "pointsFor": 0,
+    "logo": "/logos/grit.png"
+  }
+]
