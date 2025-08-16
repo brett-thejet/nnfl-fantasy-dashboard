@@ -1,10 +1,9 @@
-require('dotenv').config();
-const contentful = require('contentful');
+import { createClient } from "contentful";
 
-const client = contentful.createClient({
-  space: process.env.CONTENTFUL_SPACE_ID,
-  accessToken: process.env.CONTENTFUL_CDA_TOKEN
+const client = createClient({
+  space: process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID,
+  accessToken: process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN,
 });
 
-module.exports = client;
+export default client;
 
