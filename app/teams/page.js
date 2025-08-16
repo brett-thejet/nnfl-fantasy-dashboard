@@ -1,19 +1,23 @@
 // app/teams/page.js
 import { createClient } from 'contentful';
 
-export const revalidate = 60; // ISR: refresh every 60s
+export const revalidate = 60; // ISR: refresh data every 60s
 
 function buildLogoUrl(entry, assetsMap) {
   const l = entry.fields.logo;
   let url = null;
 
+  // Directly resolved
   if (l?.fields?.file?.url) {
     const u = l.fields.file.url;
     url = (u.startsWith('http') ? '' : 'https:') + u;
-  } else if (l?.sys?.id && assetsMap[l.sys.id]?.fields?.file?.url) {
+  }
+  // Resolve via includes map
+  else if (l?.sys?.id && assetsMap[l.sys.id]?.fields?.file?.url) {
     const u = assetsMap[l.sys.id].fields.file.url;
     url = (u.startsWith('http') ? '' : 'https:') + u;
   }
+
   return url;
 }
 
@@ -21,13 +25,13 @@ async function fetchTeams() {
   const client = createClient({
     space: process.env.CONTENTFUL_SPACE_ID,
     accessToken: process.env.CONTENTFUL_CDA_TOKEN,
-    environment: 'master',
+    environment: 'master'
   });
 
   const res = await client.getEntries({
     content_type: 'team',
     include: 1,
-    order: 'fields.name',
+    order: 'fields.name'
   });
 
   const assets = {};
@@ -37,7 +41,7 @@ async function fetchTeams() {
     id: t.sys.id,
     name: t.fields.name,
     slug: t.fields.slug,
-    logoUrl: buildLogoUrl(t, assets),
+    logoUrl: buildLogoUrl(t, assets)
   }));
 }
 
@@ -54,9 +58,11 @@ export default async function TeamsPage() {
               <img
                 src={`${team.logoUrl}?w=96&h=96&fit=thumb&fm=webp&q=80`}
                 alt={`${team.name} logo`}
-                width={48}
-                height={48}
+                width="48"
+                height="48"
                 style={{ borderRadius: 8, objectFit: 'cover' }}
+                decoding="async"
+                loading="lazy"
               />
             ) : (
               <div style={{ width: 48, height: 48, background: '#f3f4f6', borderRadius: 8 }} />
@@ -64,9 +70,6 @@ export default async function TeamsPage() {
             <div>
               <div style={{ fontWeight: 600 }}>{team.name}</div>
               <div style={{ color: '#6b7280', fontSize: 12 }}>{team.slug}</div>
-              <div style={{ color: '#9ca3af', fontSize: 12, wordBreak: 'break-all' }}>
-                {team.logoUrl ?? '(no URL)'}
-              </div>
             </div>
           </li>
         ))}
@@ -74,3 +77,4 @@ export default async function TeamsPage() {
     </main>
   );
 }
+
