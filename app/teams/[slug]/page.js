@@ -1,8 +1,8 @@
 // app/teams/[slug]/page.js
-import { notFound } from 'next/navigation';
-import client from '@/src/contentfulClient';
+import Link from "next/link";
+import { getContentfulClient } from "../../../src/contentfulClient";
 
-export const revalidate = 60; // ISR: refresh data every 60s
+export const revalidate = 60; // ISR
 
 function buildLogoUrl(entry, assetsMap) {
   const l = entry.fields.logo;
@@ -10,27 +10,30 @@ function buildLogoUrl(entry, assetsMap) {
 
   if (l?.fields?.file?.url) {
     const u = l.fields.file.url;
-    url = (u.startsWith('http') ? '' : 'https:') + u;
+    url = (u.startsWith("http") ? "" : "https:") + u;
   } else if (l?.sys?.id && assetsMap[l.sys.id]?.fields?.file?.url) {
     const u = assetsMap[l.sys.id].fields.file.url;
-    url = (u.startsWith('http') ? '' : 'https:') + u;
+    url = (u.startsWith("http") ? "" : "https:") + u;
   }
+
   return url;
 }
 
-async function getTeamBySlug(slug) {
+async function fetchTeamBySlug(slug) {
+  const client = getContentfulClient();
+
   const res = await client.getEntries({
-    content_type: 'team',
-    'fields.slug': slug,
+    content_type: "team",
+    "fields.slug": slug,
     include: 1,
     limit: 1,
   });
 
-  const t = res.items[0];
-  if (!t) return null;
+  if (!res.items.length) return null;
 
+  const t = res.items[0];
   const assets = {};
-  (res.includes?.Asset || []).forEach(a => (assets[a.sys.id] = a));
+  (res.includes?.Asset || []).forEach((a) => (assets[a.sys.id] = a));
 
   return {
     id: t.sys.id,
@@ -40,56 +43,34 @@ async function getTeamBySlug(slug) {
   };
 }
 
-// Prebuild all slugs at build time (and revalidate via ISR)
-export async function generateStaticParams() {
-  const res = await client.getEntries({
-    content_type: 'team',
-    select: 'fields.slug',
-    limit: 1000,
-  });
+export default async function TeamDetailPage({ params }) {
+  const team = await fetchTeamBySlug(params.slug);
 
-  return res.items
-    .map(i => i.fields?.slug)
-    .filter(Boolean)
-    .map(slug => ({ slug }));
-}
-
-export default async function TeamPage({ params }) {
-  const team = await getTeamBySlug(params.slug);
-  if (!team) notFound();
+  if (!team) {
+    return (
+      <main style={{ padding: 24, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui, -apple-system" }}>
+        <p>Team not found.</p>
+        <p><Link href="/teams" style={{ color: "#60a5fa" }}>← Back to Teams</Link></p>
+      </main>
+    );
+  }
 
   return (
-    <main style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: 'system-ui, -apple-system' }}>
-      <a href="/teams" style={{ color: '#a8caff' }}>← Back to Teams</a>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 16 }}>
-        {team.logoUrl ? (
-          <img
-            src={`${team.logoUrl}?w=200&h=200&fit=thumb&fm=webp&q=80`}
-            alt={`${team.name} logo`}
-            width={100}
-            height={100}
-            style={{ borderRadius: 12, objectFit: 'cover', background: '#111827' }}
-          />
-        ) : (
-          <div style={{ width: 100, height: 100, borderRadius: 12, background: '#111827' }} />
-        )}
-        <div>
-          <h1 style={{ margin: 0 }}>{team.name}</h1>
-          <div style={{ color: '#9ca3af', fontSize: 14 }}>{team.slug}</div>
-        </div>
-      </div>
-
-      {/* You can expand this section with standings, roster, schedule, etc. */}
-      <section style={{ marginTop: 24, borderTop: '1px solid #243', paddingTop: 16 }}>
-        <h2 style={{ marginTop: 0 }}>Team Details</h2>
-        <ul style={{ lineHeight: 1.8 }}>
-          <li><strong>Slug:</strong> {team.slug}</li>
-          <li>
-            <strong>Logo URL:</strong>{' '}
-            <span style={{ color: '#9ca3af', wordBreak: 'break-all' }}>{team.logoUrl ?? '(none)'}</span>
-          </li>
-        </ul>
-      </section>
+    <main style={{ padding: 24, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui, -apple-system" }}>
+      <p><Link href="/teams" style={{ color: "#60a5fa" }}>← Back to Teams</Link></p>
+      <h1 style={{ margin: "12px 0" }}>{team.name}</h1>
+      {team.logoUrl ? (
+        <img
+          src={`${team.logoUrl}?w=256&h=256&fit=thumb&fm=webp&q=80`}
+          alt={`${team.name} logo`}
+          width={128}
+          height={128}
+          style={{ borderRadius: 12, objectFit: "cover" }}
+        />
+      ) : (
+        <div style={{ width: 128, height: 128, background: "#f3f4f6", borderRadius: 12 }} />
+      )}
+      <div style={{ marginTop: 12, color: "#6b7280" }}>slug: {team.slug}</div>
     </main>
   );
 }
