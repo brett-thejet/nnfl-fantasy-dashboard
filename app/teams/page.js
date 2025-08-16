@@ -1,81 +1,33 @@
-// app/teams/page.js
-import { createClient } from 'contentful';
-
-export const revalidate = 60; // ISR: refresh data every 60s
-
-function buildLogoUrl(entry, assetsMap) {
-  const l = entry.fields.logo;
-  let url = null;
-
-  // Directly resolved
-  if (l?.fields?.file?.url) {
-    const u = l.fields.file.url;
-    url = (u.startsWith('http') ? '' : 'https:') + u;
-  }
-  // Resolve via includes map
-  else if (l?.sys?.id && assetsMap[l.sys.id]?.fields?.file?.url) {
-    const u = assetsMap[l.sys.id].fields.file.url;
-    url = (u.startsWith('http') ? '' : 'https:') + u;
-  }
-
-  return url;
-}
-
-async function fetchTeams() {
-  const client = createClient({
-    space: process.env.CONTENTFUL_SPACE_ID,
-    accessToken: process.env.CONTENTFUL_CDA_TOKEN,
-    environment: 'master'
-  });
-
-  const res = await client.getEntries({
-    content_type: 'team',
-    include: 1,
-    order: 'fields.name'
-  });
-
-  const assets = {};
-  (res.includes?.Asset || []).forEach(a => (assets[a.sys.id] = a));
-
-  return res.items.map(t => ({
-    id: t.sys.id,
-    name: t.fields.name,
-    slug: t.fields.slug,
-    logoUrl: buildLogoUrl(t, assets)
-  }));
-}
+import { fetchTeams } from "@/src/contentfulClient";
 
 export default async function TeamsPage() {
   const teams = await fetchTeams();
 
   return (
-    <main style={{ padding: 24, maxWidth: 900, margin: '0 auto', fontFamily: 'system-ui, -apple-system' }}>
-      <h1 style={{ marginBottom: 16 }}>Teams</h1>
-      <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-        {teams.map(team => (
-          <li key={team.id} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">NNFL Teams</h1>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {teams.map((team) => (
+          <div
+            key={team.id}
+            className="flex flex-col items-center border rounded-lg p-4 shadow-sm"
+          >
             {team.logoUrl ? (
               <img
-                src={`${team.logoUrl}?w=96&h=96&fit=thumb&fm=webp&q=80&v=${Date.now()}`} // temp cache-buster
-                alt={`${team.name} logo`}
-                width={48}
-                height={48}
-                style={{ borderRadius: 8, objectFit: 'cover' }}
+                src={`${team.logoUrl}?w=96&h=96&fit=thumb&fm=webp&q=80`}
+                alt={team.name}
+                className="w-24 h-24 object-contain mb-2"
               />
             ) : (
-              <div style={{ width: 48, height: 48, background: '#f3f4f6', borderRadius: 8 }} />
-            )}
-            <div>
-              <div style={{ fontWeight: 600 }}>{team.name}</div>
-              <div style={{ color: '#6b7280', fontSize: 12 }}>{team.slug}</div>
-              {/* DEBUG: show the computed logo URL so we can verify */}
-              <div style={{ color: '#9ca3af', fontSize: 12, wordBreak: 'break-all' }}>
-                {team.logoUrl ?? '(no URL)'}
+              <div className="w-24 h-24 bg-gray-200 mb-2 flex items-center justify-center">
+                <span className="text-sm text-gray-500">No Logo</span>
               </div>
-            </div>
-          </li>
+            )}
+            <span className="font-medium">{team.name}</span>
+          </div>
         ))}
-      </ul>
-    </main>
+      </div>
+    </div>
   );
 }
+
