@@ -1,7 +1,7 @@
 // app/faab/page.js
 import Link from "next/link";
 import Image from "next/image";
-import { getContentfulClient } from "@/src/contentfulClient";
+import { getContentfulClient } from "../../src/contentfulClient";
 
 export const revalidate = 60; // ISR: refresh FAAB every minute
 
