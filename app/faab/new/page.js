@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import client from '@/src/contentfulClient';
+import client from '../../src/contentfulClient';
 
 async function fetchTeams() {
   const res = await client.getEntries({
