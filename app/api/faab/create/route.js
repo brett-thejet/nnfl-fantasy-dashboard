@@ -1,5 +1,7 @@
-export const runtime = 'nodejs';        // ensure Node runtime (not Edge)
-export const dynamic = 'force-dynamic'; // don't cache
+export const runtime = 'nodejs';        // force Node runtime (not Edge)
+export const dynamic = 'force-dynamic'; // no caching
+
+import * as contentfulManagement from 'contentful-management';
 
 function badRequest(message, extras = {}) {
   return new Response(JSON.stringify({ message, ...extras }), {
@@ -17,30 +19,26 @@ export async function POST(req) {
     if (!type) return badRequest('Missing type (one of: spend, add, adjust)');
     if (typeof amount !== 'number' || Number.isNaN(amount)) return badRequest('Amount must be a number');
 
-    const token  = process.env.CONTENTFUL_CMA_TOKEN;
+    const token   = process.env.CONTENTFUL_CMA_TOKEN;
     const spaceId = process.env.CONTENTFUL_SPACE_ID;
-    const envId = process.env.CONTENTFUL_ENVIRONMENT || 'master';
+    const envId   = process.env.CONTENTFUL_ENVIRONMENT || 'master';
+
     if (!token || !spaceId) {
       return new Response(
-        JSON.stringify({ message: 'Missing CONTENTFUL_CMA_TOKEN or CONTENTFUL_SPACE_ID in env' }),
+        JSON.stringify({ ok: false, message: 'Missing CONTENTFUL_CMA_TOKEN or CONTENTFUL_SPACE_ID in env' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Lazy import to avoid edge bundling issues
-    const maybeDefault = (await import('contentful-management'));
-    const { createClient } = maybeDefault.default ?? maybeDefault;
-
-    const cma   = createClient({ accessToken: token });
+    const cma   = contentfulManagement.createClient({ accessToken: token });
     const space = await cma.getSpace(spaceId);
     const env   = await space.getEnvironment(envId);
 
-    // Build entry payload — field IDs must match your Contentful model
-    // You previously had "transactionType" (NOT "type")
+    // Field IDs must match your Contentful model
     const entry = await env.createEntry('faabTransaction', {
       fields: {
         team: { 'en-US': { sys: { type: 'Link', linkType: 'Entry', id: teamId } } },
-        transactionType: { 'en-US': String(type) }, // <- your field ID
+        transactionType: { 'en-US': String(type) }, // <- matches your field ID
         amount: { 'en-US': Number(amount) },
         description: { 'en-US': description ? String(description) : '' },
         timestamp: { 'en-US': timestamp ? new Date(timestamp).toISOString() : new Date().toISOString() },
