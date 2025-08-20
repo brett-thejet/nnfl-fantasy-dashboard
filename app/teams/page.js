@@ -1,4 +1,5 @@
-// app/teams/page.js
+import Image from "next/image";
+import Link from "next/link";
 import { getContentfulClient } from "../../src/contentfulClient";
 
 export const revalidate = 60; // ISR: refresh data every 60s
@@ -7,13 +8,10 @@ function buildLogoUrl(entry, assetsMap) {
   const l = entry.fields.logo;
   let url = null;
 
-  // Direct on-entry asset
   if (l?.fields?.file?.url) {
     const u = l.fields.file.url;
     url = (u.startsWith("http") ? "" : "https:") + u;
-  }
-  // Via includes map
-  else if (l?.sys?.id && assetsMap[l.sys.id]?.fields?.file?.url) {
+  } else if (l?.sys?.id && assetsMap[l.sys.id]?.fields?.file?.url) {
     const u = assetsMap[l.sys.id].fields.file.url;
     url = (u.startsWith("http") ? "" : "https:") + u;
   }
@@ -23,7 +21,6 @@ function buildLogoUrl(entry, assetsMap) {
 
 async function fetchTeams() {
   const client = getContentfulClient();
-
   const res = await client.getEntries({
     content_type: "team",
     include: 1,
@@ -45,71 +42,29 @@ export default async function TeamsPage() {
   const teams = await fetchTeams();
 
   return (
-    <main
-      style={{
-        padding: 24,
-        maxWidth: 900,
-        margin: "0 auto",
-        fontFamily: "system-ui, -apple-system",
-      }}
-    >
+    <main style={{ padding: 24, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui, -apple-system" }}>
       <h1 style={{ marginBottom: 16 }}>Teams</h1>
-
-      <ul
-        style={{
-          listStyle: "none",
-          padding: 0,
-          display: "grid",
-          gap: 16,
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-        }}
-      >
+      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
         {teams.map((team) => (
-          <li
-            key={team.id}
-            style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 12,
-              padding: 16,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
+          <li key={team.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, display: "flex", alignItems: "center", gap: 12 }}>
             {team.logoUrl ? (
-              <a href={`/teams/${team.slug}`} style={{ display: "contents" }}>
-                <img
-                  src={`${team.logoUrl}?w=96&h=96&fit=thumb&fm=webp&q=80`}
-                  alt={`${team.name} logo`}
-                  width={48}
-                  height={48}
-                  style={{ borderRadius: 8, objectFit: "cover" }}
-                />
-              </a>
+              <Image
+                src={`${team.logoUrl}?w=96&h=96&fit=thumb&fm=webp&q=80`}
+                alt={`${team.name} logo`}
+                width={48}
+                height={48}
+                style={{ borderRadius: 8, objectFit: "cover" }}
+              />
             ) : (
-              <a href={`/teams/${team.slug}`} style={{ display: "contents" }}>
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    background: "#f3f4f6",
-                    borderRadius: 8,
-                  }}
-                />
-              </a>
+              <div style={{ width: 48, height: 48, background: "#f3f4f6", borderRadius: 8 }} />
             )}
-
             <div>
               <div style={{ fontWeight: 600 }}>
-                <a
-                  href={`/teams/${team.slug}`}
-                  style={{ color: "inherit", textDecoration: "none" }}
-                >
+                <Link href={`/teams/${team.slug}`} style={{ color: "#a8caff", textDecoration: "none" }}>
                   {team.name}
-                </a>
+                </Link>
               </div>
               <div style={{ color: "#6b7280", fontSize: 12 }}>{team.slug}</div>
-              {/* Debug line removed */}
             </div>
           </li>
         ))}
