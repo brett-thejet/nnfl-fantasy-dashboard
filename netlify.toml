@@ -1,13 +1,12 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  functions = "netlify/functions"
 
+# Use the official Next.js plugin
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-[build.environment]
-  SECRETS_SCAN_ENABLED = "false"
-
-
+# Pin Node for the build image (env vars like CONTENTFUL_* should be set in Netlify UI)
 [build.environment]
   NODE_VERSION = "20"
