@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import client from '@/src/contentfulClient';
+import client from '../../src/contentfulClient';
 
 async function fetchTeams() {
   const res = await client.getEntries({
@@ -18,7 +18,6 @@ async function fetchTeams() {
 
 function toISOIfProvided(localDtString) {
   if (!localDtString) return undefined;
-  // local "YYYY-MM-DDTHH:mm" → ISO
   const d = new Date(localDtString);
   if (isNaN(d.getTime())) return undefined;
   return d.toISOString();
@@ -32,7 +31,6 @@ export default function NewFaabPage() {
     fetchTeams().then(setTeams).catch(() => setTeams([]));
   }, []);
 
-  // Default datetime value in the browser (you can delete/clear it to rely on server default)
   const defaultLocal = useMemo(() => {
     const d = new Date();
     const pad = n => String(n).padStart(2, '0');
@@ -51,8 +49,8 @@ export default function NewFaabPage() {
     const type = form.get('type');
     const amount = Number(form.get('amount'));
     const description = form.get('description') || undefined;
-    const tsLocal = form.get('timestamp'); // "YYYY-MM-DDTHH:mm" or empty
-    const timestamp = toISOIfProvided(tsLocal); // undefined → server will default
+    const tsLocal = form.get('timestamp');
+    const timestamp = toISOIfProvided(tsLocal);
 
     setStatus({ state: 'saving' });
 
