@@ -1,11 +1,12 @@
-// app/teams/[slug]/page.js
+import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { getContentfulClient } from "../../../src/contentfulClient";
 
-export const revalidate = 60; // ISR
+export const revalidate = 60; // ISR: refresh every 60s
 
 function buildLogoUrl(entry, assetsMap) {
-  const l = entry.fields.logo;
+  const l = entry?.fields?.logo;
   let url = null;
 
   if (l?.fields?.file?.url) {
@@ -15,63 +16,85 @@ function buildLogoUrl(entry, assetsMap) {
     const u = assetsMap[l.sys.id].fields.file.url;
     url = (u.startsWith("http") ? "" : "https:") + u;
   }
-
   return url;
+}
+
+async function fetchAllSlugs() {
+  const client = getContentfulClient();
+  const res = await client.getEntries({
+    content_type: "team",
+    select: "fields.slug",
+    limit: 1000,
+  });
+  return res.items
+    .map((i) => i?.fields?.slug)
+    .filter(Boolean)
+    .map((slug) => ({ slug }));
 }
 
 async function fetchTeamBySlug(slug) {
   const client = getContentfulClient();
-
   const res = await client.getEntries({
     content_type: "team",
     "fields.slug": slug,
-    include: 1,
+    include: 2,
     limit: 1,
   });
 
-  if (!res.items.length) return null;
+  if (!res.items?.length) return null;
 
-  const t = res.items[0];
+  const team = res.items[0];
   const assets = {};
   (res.includes?.Asset || []).forEach((a) => (assets[a.sys.id] = a));
 
   return {
-    id: t.sys.id,
-    name: t.fields.name,
-    slug: t.fields.slug,
-    logoUrl: buildLogoUrl(t, assets),
+    id: team.sys.id,
+    name: team.fields.name,
+    slug: team.fields.slug,
+    logoUrl: buildLogoUrl(team, assets),
   };
 }
 
-export default async function TeamDetailPage({ params }) {
-  const team = await fetchTeamBySlug(params.slug);
+// Prebuild static routes for all current team slugs
+export async function generateStaticParams() {
+  return await fetchAllSlugs();
+}
 
-  if (!team) {
-    return (
-      <main style={{ padding: 24, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui, -apple-system" }}>
-        <p>Team not found.</p>
-        <p><Link href="/teams" style={{ color: "#60a5fa" }}>← Back to Teams</Link></p>
-      </main>
-    );
-  }
+export default async function TeamPage({ params }) {
+  const { slug } = params;
+  const team = await fetchTeamBySlug(slug);
+
+  if (!team) return notFound();
 
   return (
     <main style={{ padding: 24, maxWidth: 900, margin: "0 auto", fontFamily: "system-ui, -apple-system" }}>
-      <p><Link href="/teams" style={{ color: "#60a5fa" }}>← Back to Teams</Link></p>
-      <h1 style={{ margin: "12px 0" }}>{team.name}</h1>
-      {team.logoUrl ? (
-        <img
-          src={`${team.logoUrl}?w=256&h=256&fit=thumb&fm=webp&q=80`}
-          alt={`${team.name} logo`}
-          width={128}
-          height={128}
-          style={{ borderRadius: 12, objectFit: "cover" }}
-        />
-      ) : (
-        <div style={{ width: 128, height: 128, background: "#f3f4f6", borderRadius: 12 }} />
-      )}
-      <div style={{ marginTop: 12, color: "#6b7280" }}>slug: {team.slug}</div>
+      <nav style={{ marginBottom: 16 }}>
+        <Link href="/teams" style={{ color: "#a8caff", textDecoration: "none" }}>← Back to Teams</Link>
+      </nav>
+
+      <header style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+        {team.logoUrl ? (
+          <Image
+            src={`${team.logoUrl}?w=256&h=256&fit=thumb&fm=webp&q=85`}
+            alt={`${team.name} logo`}
+            width={96}
+            height={96}
+            style={{ borderRadius: 12, objectFit: "cover" }}
+            priority
+          />
+        ) : (
+          <div style={{ width: 96, height: 96, background: "#f3f4f6", borderRadius: 12 }} />
+        )}
+        <div>
+          <h1 style={{ margin: 0 }}>{team.name}</h1>
+          <div style={{ color: "#6b7280" }}>{team.slug}</div>
+        </div>
+      </header>
+
+      <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
+        <h2 style={{ marginTop: 0 }}>About this team</h2>
+        <p>Team detail page is live. You can extend this with roster, record, FAAB, and more fields from Contentful.</p>
+      </section>
     </main>
   );
 }
-
