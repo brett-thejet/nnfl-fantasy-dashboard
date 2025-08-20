@@ -10,3 +10,5 @@ Lightweight dashboard for teams, FAAB, and quick league stats using local JSON.
 - Add logos to `/public/logos`.
 - Edit `/data/*.json`.
 - Later swap to Contentful by fetching in `app/*.js` and removing the local JSON.
+
+Trigger redeploy: Wed Aug 20 05:12:19 UTC 2025
